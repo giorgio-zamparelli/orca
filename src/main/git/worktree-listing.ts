@@ -219,8 +219,7 @@ function isPosixAbsolutePath(pathValue: string): boolean {
 
 /**
  * Reconstruct the listing row for a worktree `git worktree add` just created, by asking Git about
- * the worktree itself. Used when the listing fails or omits it, so a create does not abandon a
- * worktree Git already wrote to disk (#16520). Returns undefined unless Git resolves the path into
+ * the worktree itself, without scanning unrelated worktrees. Returns undefined unless Git resolves the path into
  * this repo's object store with the expected branch checked out.
  */
 export async function describeCreatedWorktree(

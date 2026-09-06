@@ -79,6 +79,9 @@ When adding or changing a Git command:
 
 ## Git Scan Safety
 
+Worktree creation and external warm-pool integration follow
+[`docs/reference/worktree-create-performance.md`](./docs/reference/worktree-create-performance.md).
+
 - Never enumerate every ref and then run `git ls-tree -r` or `git show` once per ref. That ref × tree fan-out can retain gigabytes of output before a downstream `sort -u` or search can make progress.
 - Prefer `rg` over the checked-out files for source searches. For history or refs, use a named ref, an explicit namespace/path, `--max-count`, and a bounded output; do not use an unqualified `--all` scan as a first diagnostic.
 - Keep repository-wide commands targeted to the current repository and worktree. If an unbounded scan is genuinely required, measure the ref count first, explain the cost, and get confirmation before running it.

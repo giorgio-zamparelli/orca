@@ -10,6 +10,7 @@ import {
   invalidateAuthorizedRootsCache,
   rebuildAuthorizedRootsCache,
   registerCreatedWorktreeRoot,
+  registerWorktreeRootsForRepo,
   resolveRegisteredWorktreePath
 } from './registered-worktree-roots-cache'
 
@@ -119,5 +120,18 @@ describe('recovered worktree root pruning', () => {
 
     await expect(resolveRegisteredWorktreePath(first, store)).resolves.toBe(first)
     await expect(resolveRegisteredWorktreePath(overflow, store)).rejects.toThrow('Access denied')
+  })
+
+  it('promotes direct-read roots on ordinary listings so successive creates do not exhaust capacity', async () => {
+    const store = makeStore()
+    const listed = [repo.path]
+    for (let i = 0; i < 128; i += 1) {
+      const root = resolve(`/linked/created-${i}`)
+      registerCreatedWorktreeRoot(store, repo.id, root)
+      expect(await resolveRegisteredWorktreePath(root, store)).toBe(root)
+      listed.push(root)
+      registerWorktreeRootsForRepo(store, repo.id, listed)
+    }
+    await expect(resolveRegisteredWorktreePath(listed[1], store)).resolves.toBe(listed[1])
   })
 })

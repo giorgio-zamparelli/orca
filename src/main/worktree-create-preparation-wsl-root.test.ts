@@ -3,6 +3,10 @@ import type * as WslModule from './wsl'
 import type { Store } from './persistence'
 import type { Repo } from '../shared/repo-types'
 
+vi.mock('./git/worktree-preparation-policy', () => ({
+  isWorktreePreparationEnabled: vi.fn().mockResolvedValue(true)
+}))
+
 // Why this file exists separately from worktree-create-preparation.test.ts: that suite mocks
 // ./ipc/worktree-logic wholesale, so it can never catch the prepare (async resolver) / consume
 // (sync resolver) key disagreement that would silently discard every prepared checkout.

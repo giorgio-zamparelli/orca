@@ -36,16 +36,13 @@ export function createdWorktreeNotFoundError(worktreePath: string, branchName: s
   )
 }
 
-/**
- * Find the row for a worktree `git worktree add` just created, preferring the repo listing and
- * falling back to asking Git about the worktree itself.
- *
- * Why the fallback: the listing was the only witness the old code had, so any Git-level listing
- * failure failed a create whose worktree and branch were already on disk, orphaning both (#16520).
- */
-/** A listing that burned the whole budget still leaves the direct read a chance to answer. */
+/** A direct read that burned the whole budget still leaves the listing a chance to answer. */
 const MIN_CREATED_WORKTREE_RECOVERY_MS = 5_000
 
+/**
+ * Verify only the new worktree first: enriching every sibling can stall a successful create.
+ * The listing remains a fallback when Git cannot describe the requested path directly (#16520).
+ */
 export async function resolveCreatedWorktree(
   repoPath: string,
   worktreePath: string,
@@ -53,41 +50,31 @@ export async function resolveCreatedWorktree(
   options?: GitWorktreeExecOptions
 ): Promise<CreatedWorktreeResolution> {
   const startedAt = Date.now()
-  let listingError: unknown
-  try {
-    const worktrees = options
-      ? await listWorktreesSharedStrict(repoPath, options)
-      : await listWorktreesSharedStrict(repoPath)
-    const created = findCreatedWorktree(worktrees, worktreePath, branchName)
-    if (created) {
-      return { created, worktrees, listingComplete: true }
-    }
-  } catch (err) {
-    listingError = err
-  }
-
-  let described: GitWorktreeInfo | undefined
   let describeError: unknown
   try {
-    // One budget for verifying the create, not one per attempt: a hung Git already spent the
-    // listing's deadline, and charging the recovery a fresh one doubles the wait before the error.
-    const remainingMs = Math.max(
-      WORKTREE_LIST_TIMEOUT_MS - (Date.now() - startedAt),
-      MIN_CREATED_WORKTREE_RECOVERY_MS
-    )
-    described = await describeCreatedWorktree(repoPath, worktreePath, branchName, {
+    const described = await describeCreatedWorktree(repoPath, worktreePath, branchName, {
       ...options,
-      timeout: options?.timeout ?? remainingMs
+      timeout: options?.timeout ?? WORKTREE_LIST_TIMEOUT_MS
     })
+    if (described) {
+      return { created: described, worktrees: [], listingComplete: false }
+    }
   } catch (err) {
-    // Why keep, not rethrow: the recovery must not replace the listing's own, more informative failure.
     describeError = err
   }
-  if (described) {
-    return { created: described, worktrees: [], listingComplete: false }
-  }
-  if (listingError) {
-    throw listingError
+
+  // Share the verification budget while leaving the fallback a chance to answer.
+  const remainingMs = Math.max(
+    WORKTREE_LIST_TIMEOUT_MS - (Date.now() - startedAt),
+    MIN_CREATED_WORKTREE_RECOVERY_MS
+  )
+  const worktrees = await listWorktreesSharedStrict(repoPath, {
+    ...options,
+    timeout: options?.timeout ?? remainingMs
+  })
+  const created = findCreatedWorktree(worktrees, worktreePath, branchName)
+  if (created) {
+    return { created, worktrees, listingComplete: true }
   }
   const notFound = createdWorktreeNotFoundError(worktreePath, branchName)
   if (describeError) {

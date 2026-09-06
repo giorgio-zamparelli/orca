@@ -10,14 +10,14 @@ import { isDescendantOrEqual, normalizeExistingPath } from './filesystem-path-co
 const registeredWorktreeRoots = new Set<string>()
 const registeredWorktreeRootsByRepo = new Map<string, Set<string>>()
 /**
- * Roots Git confirmed by direct read while `git worktree list` could not see them.
+ * Roots Git confirmed by direct read before a full listing has seen them.
  *
  * Why a layer of its own: everything in `registeredWorktreeRootsByRepo` is derived from the listing,
  * so a rebuild recomputes it from the very listing that failed and would re-deny a worktree the
  * create just recovered. This layer survives rebuilds and is pruned only on evidence (#16520).
  */
 const createdWorktreeRootsByRepo = new Map<string, Set<string>>()
-/** A recovered create is rare (Git's listing must be broken); cap the layer so it can never grow unbounded. */
+/** Bound pending direct reads; successful listings promote these roots into the normal cache. */
 const CREATED_WORKTREE_ROOTS_MAX = 64
 /** The prune runs inside filesystem-auth resolution, so a hung mount must not stall it. */
 const CREATED_WORKTREE_ROOT_PROBE_TIMEOUT_MS = 1_000
@@ -189,7 +189,17 @@ export function registerWorktreeRootsForRepo(
     return
   }
 
-  registeredWorktreeRootsByRepo.set(repoId, new Set(worktreeRoots.map((root) => resolve(root))))
+  const listedRoots = new Set(worktreeRoots.map((root) => resolve(root)))
+  registeredWorktreeRootsByRepo.set(repoId, listedRoots)
+  const pendingRoots = createdWorktreeRootsByRepo.get(repoId)
+  if (pendingRoots) {
+    for (const root of listedRoots) {
+      pendingRoots.delete(root)
+    }
+    if (pendingRoots.size === 0) {
+      createdWorktreeRootsByRepo.delete(repoId)
+    }
+  }
   registeredWorktreeRootRepoIds.add(repoId)
   registeredWorktreeRootsRevisionByRepo.set(repoId, ++registeredWorktreeRootsRevisionSequence)
   refreshRegisteredWorktreeRoots()

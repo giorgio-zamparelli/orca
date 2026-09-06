@@ -15,7 +15,12 @@ const mocks = vi.hoisted(() => ({
   computeWorkspaceRoot: vi.fn(),
   computeWorkspaceRootAsync: vi.fn(),
   resolveBaseRef: vi.fn(),
-  measureDivergence: vi.fn()
+  measureDivergence: vi.fn(),
+  preparationEnabled: vi.fn()
+}))
+
+vi.mock('./git/worktree-preparation-policy', () => ({
+  isWorktreePreparationEnabled: mocks.preparationEnabled
 }))
 
 vi.mock('node:fs/promises', () => ({ mkdir: mocks.mkdir }))
@@ -66,6 +71,7 @@ const repo = { id: 'repo-1', path: '/repo' } as Repo
 const store = { getSettings: () => ({}) } as unknown as Store
 
 beforeEach(() => {
+  mocks.preparationEnabled.mockReset().mockResolvedValue(true)
   mocks.mkdir.mockReset().mockResolvedValue(undefined)
   mocks.listWorktreeGraph.mockReset().mockResolvedValue([])
   mocks.prepareCheckout.mockReset().mockResolvedValue(undefined)
@@ -96,6 +102,40 @@ afterEach(async () => {
 })
 
 describe('worktree create preparation registry', () => {
+  it('does not start speculative checkouts when the repo delegates to an external pool', async () => {
+    mocks.preparationEnabled.mockResolvedValue(false)
+    await prepareWorktreeCreateForRepo(store, repo, 'origin/main')
+    expect(mocks.prepareCheckout).not.toHaveBeenCalled()
+    expect(mocks.computeWorkspaceRootAsync).not.toHaveBeenCalled()
+  })
+
+  it('does not wait on an already-armed checkout after preparation is disabled', async () => {
+    let finish!: () => void
+    mocks.prepareCheckout.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finish = resolve
+      })
+    )
+    const preparation = prepareWorktreeCreateForRepo(store, repo, 'origin/main')
+    await flushBackgroundWork()
+    mocks.preparationEnabled.mockResolvedValue(false)
+    try {
+      await expect(
+        consumePreparedWorktreeCreate({
+          repoPath: '/repo',
+          workspaceRoot: '/workspace',
+          worktreePath: '/workspace/feature',
+          branch: 'feature',
+          baseBranch: 'origin/main'
+        })
+      ).resolves.toEqual({ status: 'miss', reason: 'disabled' })
+      expect(mocks.finalize).not.toHaveBeenCalled()
+    } finally {
+      finish()
+      await preparation
+    }
+  })
+
   it('starts the checkout only once the async workspace root resolves', async () => {
     let resolveRoot!: (root: string) => void
     mocks.computeWorkspaceRootAsync.mockReturnValue(

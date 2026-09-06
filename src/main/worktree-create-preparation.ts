@@ -32,6 +32,7 @@ import {
   resetPreparationConsumeHistoryForTests
 } from './worktree-create-preparation-burst'
 import { toHostFilesystemPath } from './host-tree-removal'
+import { isWorktreePreparationEnabled } from './git/worktree-preparation-policy'
 
 export {
   WORKTREE_CREATE_PREPARATION_LIMIT,
@@ -78,6 +79,9 @@ export async function prepareWorktreeCreateForRepo(
     return
   }
   const options = getLocalProjectWorktreeGitOptions(store, repo)
+  if (!(await isWorktreePreparationEnabled(repo.path, options))) {
+    return
+  }
   // Resolving a WSL repo's root spawns `wsl.exe`, and this runs while the create composer is open,
   // so it must not block the main thread. Key lookup and insert stay in one sync run after the await.
   // The mirror distro must be threaded exactly as createLocalWorktree threads it, or the two sides
@@ -214,6 +218,12 @@ export async function consumePreparedWorktreeCreate(
   args: ConsumePreparedWorktreeArgs
 ): Promise<PreparedWorktreeCreateAttempt> {
   const options = args.options ?? {}
+  if (listPreparations().length === 0) {
+    return { status: 'miss', reason: 'none_armed' }
+  }
+  if (!(await isWorktreePreparationEnabled(args.repoPath, options))) {
+    return { status: 'miss', reason: 'disabled' }
+  }
   const claim = await claimPreparedWorktree(args, options)
   if (claim.status === 'miss') {
     return { status: 'miss', reason: claim.reason }

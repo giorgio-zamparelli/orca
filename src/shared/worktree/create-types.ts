@@ -34,6 +34,7 @@ export type WorktreeCreateTimingPhase = {
 /** Closed vocabulary: these values reach span attributes, so none of them may ever
  *  be derived from a branch name, a ref, or a path. */
 export type PreparedCheckoutMissReason =
+  | 'disabled'
   | 'none_armed'
   /** Preparations exist, but none for this repo — it was never warmed, or the pool's size cap
    *  evicted it for another repo. Distinguished from `none_armed` because it is the signal that

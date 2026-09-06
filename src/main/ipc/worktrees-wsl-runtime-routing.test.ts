@@ -149,7 +149,12 @@ describe('registerWorktreeHandlers', () => {
       'origin/main',
       { wslDistro: 'Ubuntu' }
     )
-    expect(listWorktreesMock).toHaveBeenCalledWith('/workspace/repo', { wslDistro: 'Ubuntu' })
+    expect(listWorktreesMock).toHaveBeenCalledWith(
+      '/workspace/repo',
+      '/workspace/improve-dashboard',
+      'improve-dashboard',
+      { wslDistro: 'Ubuntu' }
+    )
   })
 
   it('routes fork push target setup through the selected WSL project runtime', async () => {

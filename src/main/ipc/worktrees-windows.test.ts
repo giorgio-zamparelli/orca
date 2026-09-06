@@ -72,6 +72,7 @@ vi.mock('electron', () => ({
 
 vi.mock('../git/worktree', () => ({
   listWorktrees: listWorktreesMock,
+  listWorktreesForCreate: listWorktreesMock,
   listWorktreesStrict: listWorktreesMock,
   assertWorktreeCleanForRemoval: assertWorktreeCleanForRemovalMock,
   addWorktree: addWorktreeMock,

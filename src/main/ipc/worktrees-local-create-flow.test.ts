@@ -403,6 +403,11 @@ describe('registerWorktreeHandlers', () => {
       name: 'improve-dashboard'
     })
 
+    expect(listWorktreesMock).toHaveBeenCalledWith(
+      '/workspace/repo',
+      '/workspace/improve-dashboard',
+      'improve-dashboard'
+    )
     const listWorktreesCallsAfterCreate = listWorktreesMock.mock.calls.length
     await expect(
       resolveRegisteredWorktreePath('/workspace/improve-dashboard', store as never)

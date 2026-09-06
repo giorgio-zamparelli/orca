@@ -697,6 +697,30 @@ async function readTranslatedWorktreeGraph(
   })
 }
 
+export async function listWorktreesForCreate(
+  repoPath: string,
+  requestedPath: string,
+  branchName: string,
+  options: GitWorktreeExecOptions = {}
+): Promise<GitWorktreeInfo[]> {
+  // Why: creation needs the full root graph, but must not wait on sibling sparse probes or an in-flight enriched scan.
+  const worktrees = await readTranslatedWorktreeGraph(repoPath, options)
+  const directIndex = worktrees.findIndex((worktree) =>
+    areWorktreePathsEqual(worktree.path, requestedPath)
+  )
+  // Why: Git can canonicalize a symlinked destination; its exact branch still identifies the created row.
+  const createdIndex =
+    directIndex !== -1
+      ? directIndex
+      : worktrees.findIndex((worktree) => worktree.branch === `refs/heads/${branchName}`)
+  const created = worktrees[createdIndex]
+  if (created) {
+    const [annotated] = await annotateSparseCheckoutStatus([created])
+    worktrees[createdIndex] = annotated
+  }
+  return worktrees
+}
+
 export async function listWorktreeGraph(
   repoPath: string,
   options: GitWorktreeExecOptions = {}

@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { listWorktrees, parseCoreSparseCheckoutFlag } from './worktree'
+import { listWorktrees, listWorktreesForCreate, parseCoreSparseCheckoutFlag } from './worktree'
 
 const tempRoots: string[] = []
 
@@ -43,6 +43,25 @@ afterEach(async () => {
 })
 
 describe('sparse-checkout detection', () => {
+  it.skipIf(process.platform === 'win32')(
+    'creation annotates its sparse worktree while preserving the complete root graph',
+    async () => {
+      const repoPath = await createRepoWithTwoDirs()
+      const targetPath = path.join(path.dirname(repoPath), 'feature')
+      git(repoPath, ['worktree', 'add', '-b', 'feature', targetPath])
+      git(targetPath, ['sparse-checkout', 'set', 'keep'])
+
+      const worktrees = await listWorktreesForCreate(repoPath, targetPath, 'feature')
+
+      expect(worktrees.map((worktree) => worktree.path)).toEqual([repoPath, targetPath])
+      expect(worktrees[1].isSparse).toBe(true)
+      git(targetPath, ['sparse-checkout', 'disable'])
+      expect(
+        (await listWorktreesForCreate(repoPath, targetPath, 'feature'))[1].isSparse
+      ).toBeFalsy()
+    }
+  )
+
   it.skipIf(process.platform === 'win32')(
     'reports isSparse while sparse checkout is enabled',
     async () => {

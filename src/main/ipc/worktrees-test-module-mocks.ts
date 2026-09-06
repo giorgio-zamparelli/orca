@@ -112,6 +112,7 @@ export const electronModuleMock = () => ({
 
 export const gitWorktreeModuleMock = () => ({
   listWorktrees: listWorktreesMock,
+  listWorktreesForCreate: listWorktreesMock,
   listWorktreesStrict: listWorktreesMock,
   parseWorktreeList: parseWorktreeListMock,
   assertWorktreeCleanForRemoval: assertWorktreeCleanForRemovalMock,

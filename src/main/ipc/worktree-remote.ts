@@ -26,7 +26,12 @@ import type {
   WorktreeHeadIdentity
 } from '../../shared/worktree/types'
 import { getPRForBranch } from '../github/client'
-import { listWorktrees, addWorktree, addSparseWorktree } from '../git/worktree'
+import {
+  listWorktrees,
+  listWorktreesForCreate,
+  addWorktree,
+  addSparseWorktree
+} from '../git/worktree'
 import type { AddWorktreeOptions, AddWorktreeResult } from '../git/worktree'
 import {
   getBranchConflictKind,
@@ -2442,11 +2447,11 @@ export async function createLocalWorktree(
     )
   }
 
-  // Re-list to get the freshly created worktree info
+  // Keep every authorized root, but only enrich the freshly created worktree.
   const gitWorktrees = await timing.time('list_created_worktree', async () =>
     hasLocalWorktreeGitOptions
-      ? listWorktrees(repo.path, localWorktreeGitOptions)
-      : listWorktrees(repo.path)
+      ? listWorktreesForCreate(repo.path, worktreePath, branchName, localWorktreeGitOptions)
+      : listWorktreesForCreate(repo.path, worktreePath, branchName)
   )
   // Why: Git may canonicalize a symlinked create path; its exact branch identifies the listed row.
   const created = findCreatedWorktree(gitWorktrees, worktreePath, branchName)

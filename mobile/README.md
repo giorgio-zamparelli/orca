@@ -80,6 +80,14 @@ If the phone has a stale host entry, remove it from the app and pair again.
 1. Install Xcode from the App Store
 2. Run `pnpm start --ios` to open in iOS Simulator
 
+Native iOS builds use `plugins/with-ios-scenes.js` to adopt the UIKit scene
+lifecycle required by Xcode 27. The plugin moves window creation into
+`plugins/ios/SceneDelegate.swift`, preserves cold and warm links, and forwards
+scene transitions to Expo 55's app delegate subscribers. Process launch and
+background callbacks stay in `ExpoAppDelegate`, including WatchConnectivity.
+Regenerate with `pnpm exec expo prebuild --platform ios --no-install` after
+changing this plugin; the generated `ios/` directory is not committed.
+
 ## Physical Phone Debugging
 
 The phone can be inspected through the connected device tooling:

@@ -83,6 +83,7 @@
       "expo-notifications",
       "./plugins/android-respect-rotation-lock.js",
       "./plugins/with-orca-watch.js",
+      "./plugins/with-ios-scenes.js",
       [
         "expo-splash-screen",
         {

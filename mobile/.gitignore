@@ -9,6 +9,7 @@ src/components/pr-sidebar/mermaid-page-engine.generated.ts
 dist/
 /android/
 /ios/
+/build/
 *.jks
 *.p8
 *.p12

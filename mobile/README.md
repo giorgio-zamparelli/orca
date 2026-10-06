@@ -2,6 +2,9 @@
 
 React Native companion app for Orca. Monitor worktrees, view terminal output, and send commands from your phone.
 
+The iOS app also includes a native [Apple Watch companion](watch/README.md) for
+viewing workspace names, agent status and branch details through the paired iPhone.
+
 Local development uses two processes:
 
 - Orca desktop/Electron from the repo root. This hosts the mobile WebSocket RPC server on port `6768`.

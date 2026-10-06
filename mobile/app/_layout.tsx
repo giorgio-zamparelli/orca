@@ -25,6 +25,7 @@ import { loadHostCatalog } from '../src/transport/host-store'
 import { extractPairingCodeFromUrl } from '../src/transport/pairing'
 import { recoverMobileRelayPairing } from '../src/transport/mobile-relay-pairing-recovery'
 import { appUpdateChecker } from '../src/app-update/app-update-runtime'
+import { WatchWorkspaceSync } from '../src/watch/WatchWorkspaceSync'
 
 // Why: keeps the native splash screen visible until the React tree is mounted
 // and ready to render. Without this the user sees a blank white/black frame
@@ -194,6 +195,7 @@ export default function RootLayout() {
 
   return (
     <RpcClientProvider>
+      <WatchWorkspaceSync />
       <View style={styles.root} onLayout={onNavigatorLayout}>
         <StatusBar style="light" />
         <Stack

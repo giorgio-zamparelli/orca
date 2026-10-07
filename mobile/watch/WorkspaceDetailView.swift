@@ -24,8 +24,7 @@ struct WorkspaceDetailView: View {
   private func details(_ workspace: WatchWorkspace, host: WorkspaceHost, at date: Date) -> some View {
     VStack(alignment: .leading, spacing: 12) {
       Text(workspace.name).font(.headline)
-      Label(host.isFresh(at: date) ? workspace.status.label : "Last known · \(workspace.status.label)",
-        systemImage: workspace.status.symbol)
+      WorkspaceStatusView(status: workspace.status, isFresh: host.isFresh(at: date))
         .font(.subheadline)
       Text(host.name).font(.caption).foregroundStyle(.secondary)
       if !workspace.repo.isEmpty {

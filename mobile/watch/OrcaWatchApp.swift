@@ -8,8 +8,16 @@ struct OrcaWatchApp: App {
   var body: some Scene {
     WindowGroup {
       WorkspaceListView(store: store)
-        .onChange(of: scenePhase) { _, phase in
-          if phase == .active { store.refresh() }
+        .task(id: scenePhase) {
+          guard scenePhase == .active else { return }
+          while !Task.isCancelled {
+            store.refresh()
+            do {
+              try await Task.sleep(nanoseconds: 15_000_000_000)
+            } catch {
+              return
+            }
+          }
         }
     }
   }

@@ -36,10 +36,15 @@ final class OrcaWatchSession: NSObject, WCSessionDelegate {
   }
 
   private func publish() {
-    guard isAvailable, WCSession.default.activationState == .activated,
+    let session = WCSession.default
+    guard isAvailable, session.activationState == .activated,
       let json = latestJSON else { return }
-    // Application context coalesces snapshots and delivers even when the watch isn't reachable.
-    try? WCSession.default.updateApplicationContext(["workspaceSnapshot": Data(json.utf8)])
+    let context = ["workspaceSnapshot": Data(json.utf8)]
+    // Keep a durable latest context; immediate messages update an open watch without delivery delay.
+    try? session.updateApplicationContext(context)
+    if session.isReachable {
+      session.sendMessage(context, replyHandler: nil, errorHandler: nil)
+    }
   }
 
   func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState,
@@ -51,6 +56,14 @@ final class OrcaWatchSession: NSObject, WCSessionDelegate {
   }
 
   func sessionWatchStateDidChange(_ session: WCSession) {
+    DispatchQueue.main.async { [weak self] in
+      self?.publish()
+      self?.onRefresh?()
+    }
+  }
+
+  func sessionReachabilityDidChange(_ session: WCSession) {
+    guard session.isReachable else { return }
     DispatchQueue.main.async { [weak self] in
       self?.publish()
       self?.onRefresh?()

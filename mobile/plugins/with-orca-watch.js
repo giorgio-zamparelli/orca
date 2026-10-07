@@ -8,7 +8,8 @@ const WATCH_SOURCES = [
   'WorkspaceSnapshot.swift',
   'WatchWorkspaceStore.swift',
   'WorkspaceListView.swift',
-  'WorkspaceDetailView.swift'
+  'WorkspaceDetailView.swift',
+  'WorkspaceStatusView.swift'
 ]
 
 function addOrcaWatchTarget(project, { bundleIdentifier, version, buildNumber, team }) {
@@ -30,9 +31,6 @@ function addOrcaWatchTarget(project, { bundleIdentifier, version, buildNumber, t
     project.addToPbxGroup(group.uuid, project.getFirstProject().firstProject.mainGroup)
     project.addBuildPhase([], 'PBXSourcesBuildPhase', 'Sources', uuid)
     project.addBuildPhase([], 'PBXResourcesBuildPhase', 'Resources', uuid)
-    for (const file of WATCH_SOURCES) {
-      project.addSourceFile(file, { target: uuid }, group.uuid)
-    }
     for (const resource of ['Assets.xcassets', 'PrivacyInfo.xcprivacy']) {
       const file = project.addFile(resource, group.uuid)
       file.target = uuid
@@ -41,6 +39,10 @@ function addOrcaWatchTarget(project, { bundleIdentifier, version, buildNumber, t
       project.addToPbxResourcesBuildPhase(file)
     }
     project.addFile(`${WATCH_TARGET}-Info.plist`, group.uuid)
+  }
+  const group = project.findPBXGroupKey({ name: WATCH_TARGET })
+  for (const file of WATCH_SOURCES) {
+    project.addSourceFile(file, { target: uuid }, group)
   }
   const phone = project.getFirstTarget()
   const dependencies = project.hash.project.objects.PBXTargetDependency

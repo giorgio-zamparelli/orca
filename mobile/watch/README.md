@@ -15,10 +15,15 @@ It refreshes every 15 seconds while the iPhone app is active, on foreground,
 when its client inventory changes and when the watch requests a refresh.
 Android, web, Expo Go and older native iOS builds use the no-op adapter.
 
+The watch requests an update automatically when opened, every 15 seconds while
+active, and when its iPhone connection becomes reachable. It stops periodic
+requests when inactive; there is no manual refresh control.
+
 The local Expo module `modules/orca-watch-connectivity` activates
 WatchConnectivity at native app launch. It publishes the latest snapshot with
 `updateApplicationContext`, which coalesces updates and can deliver in the
-background. It also answers a watch refresh with its persisted snapshot before
+background, and sends it immediately to a reachable watch. It also answers a
+watch refresh with its persisted snapshot before
 asking JavaScript to fetch a newer one. Refresh is a request, not proof of a
 new desktop read. iOS can suspend JavaScript while the phone app is backgrounded;
 open Orca on iPhone to obtain a fresh desktop snapshot.
@@ -26,7 +31,10 @@ open Orca on iPhone to obtain a fresh desktop snapshot.
 Both devices retain the last snapshot across launches. The phone restores its
 validated display cache before publishing its initial reconnecting hosts, with
 their original read timestamps and full counts. The watch labels statuses
-as **Last known** after 60 seconds or when a host is unavailable. A failed or
+as **Last known** after 60 seconds or when a host is unavailable. Working uses
+the same yellow ring and one-second rotation as iPhone and desktop; active and
+done are green, needs input red, and inactive gray. The ring stops for stale
+data, Reduce Motion and the watch's inactive or Always On state. A failed or
 malformed RPC response preserves the proven rows and their timestamp; it cannot
 claim the host has no workspaces. Removing a host or losing its credentials
 removes its workspace data from subsequent snapshots. Archived workspaces are

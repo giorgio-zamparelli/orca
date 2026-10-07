@@ -158,5 +158,29 @@ describe('watch target generation', () => {
     expect(reparsed.hash.project.objects.PBXNativeTarget.PHONE.dependencies).toHaveLength(1)
     expect(watch.buildPhases).toHaveLength(2)
     expect(readFileSync(project.filepath, 'utf8')).toContain('WorkspaceListView.swift')
+    const sources = reparsed.hash.project.objects.PBXSourcesBuildPhase[watch.buildPhases[0].value]
+    expect(sources.files).toHaveLength(6)
+    expect(readFileSync(project.filepath, 'utf8')).toContain('WorkspaceStatusView.swift')
+  })
+
+  it('adds a new source to an existing watch target without duplicating its build entry', () => {
+    const project = baseProject()
+    const options = { bundleIdentifier: 'com.test.orca' }
+    const uuid = addOrcaWatchTarget(project, options)
+    const group = project.findPBXGroupKey({ name: 'OrcaWatch' })
+    project.removeSourceFile('WorkspaceStatusView.swift', { target: uuid }, group)
+    writeFileSync(project.filepath, project.writeSync())
+    const reparsed = xcode.project(project.filepath)
+    reparsed.parseSync()
+    addOrcaWatchTarget(reparsed, options)
+    addOrcaWatchTarget(reparsed, options)
+    const watch = reparsed.pbxNativeTargetSection()[uuid]
+    const sources = reparsed.hash.project.objects.PBXSourcesBuildPhase[watch.buildPhases[0].value]
+    expect(sources.files).toHaveLength(6)
+    expect(
+      sources.files.filter(
+        (file: { comment: string }) => file.comment === 'WorkspaceStatusView.swift in Sources'
+      )
+    ).toHaveLength(1)
   })
 })

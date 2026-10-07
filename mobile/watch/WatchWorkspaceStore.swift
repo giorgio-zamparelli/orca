@@ -45,7 +45,7 @@ final class WatchWorkspaceStore: NSObject, ObservableObject, WCSessionDelegate {
     }, errorHandler: { [weak self] _ in
       Task { @MainActor in
         self?.isRefreshing = false
-        self?.message = "Couldn't reach your iPhone. Try again."
+        self?.message = "Waiting for your iPhone. Sync will retry automatically."
       }
     })
   }
@@ -77,5 +77,14 @@ final class WatchWorkspaceStore: NSObject, ObservableObject, WCSessionDelegate {
 
   nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
     Task { @MainActor [weak self] in self?.receive(applicationContext) }
+  }
+
+  nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+    Task { @MainActor [weak self] in self?.receive(message) }
+  }
+
+  nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
+    guard session.isReachable else { return }
+    Task { @MainActor [weak self] in self?.refresh() }
   }
 }

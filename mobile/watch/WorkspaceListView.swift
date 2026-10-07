@@ -31,19 +31,6 @@ struct WorkspaceListView: View {
         }
       }
       .navigationTitle(store.isPreview ? "Orca Preview" : "Orca")
-      .toolbar {
-        ToolbarItem(placement: .bottomBar) {
-          Button(action: store.refresh) {
-            if store.isRefreshing {
-              ProgressView().accessibilityLabel("Syncing workspaces")
-            } else {
-              Label("Refresh", systemImage: "arrow.clockwise")
-            }
-          }
-          .disabled(store.isRefreshing || store.isPreview)
-          .accessibilityLabel("Refresh workspaces")
-        }
-      }
     }
   }
 
@@ -63,9 +50,8 @@ struct WorkspaceListView: View {
             if !workspace.repo.isEmpty {
               Text(workspace.repo).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
-            Label(host.isFresh(at: date) ? workspace.status.label : "Last known · \(workspace.status.label)",
-              systemImage: workspace.status.symbol)
-              .font(.caption2).foregroundStyle(.secondary)
+            WorkspaceStatusView(status: workspace.status, isFresh: host.isFresh(at: date))
+              .font(.caption2)
           }
         }
       }

@@ -91,9 +91,7 @@ enum WorkspaceStatus: String, Codable {
     switch self {
     case .permission: "exclamationmark.bubble"
     case .working: "arrow.triangle.2.circlepath"
-    case .done: "checkmark.circle"
-    case .active: "circle.fill"
-    case .inactive: "moon"
+    case .done, .active, .inactive: "circle.fill"
     case .unknown: "questionmark.circle"
     }
   }
